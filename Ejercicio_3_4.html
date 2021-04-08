@@ -1,0 +1,252 @@
+<!--
+	Daniel Francosco Sanabria Bernal
+	6000420
+	Computación Grafica
+	MUL B Cajica
+-->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Quiz 2-1 : 6000420</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; }
+	  #info{
+		position: absolute;
+        padding: 10px;
+        width: 100%;
+        text-align: center;
+        color: #FFFFFF;
+	  }
+    </style>
+  </head>
+  <body>
+	<div id="info">ROTACIÓN<br/>
+		Presiona s para avanzar<br/>
+	</div>
+    <script src="js/three.min.js"></script>
+    <script>
+
+		/**
+			Daniel Francosco Sanabria Bernal
+			6000420
+			Computación Grafica
+			MUL B Cajica	
+		**/
+
+		/// DECLARACION DE VARIABLES
+		var scene, aspect, camera, renderer;
+		var startTime = Date.now();
+
+		var presionado = false;
+		var etapa = 0;
+		var sphere;
+
+		document.addEventListener('keydown',function(event){
+			if(event.keyCode == 83){
+				presionado = true;
+			}
+		},false);
+		
+		document.addEventListener('keyup',function(event){
+			if(event.keyCode == 83){
+				presionado = false;
+			}
+		},false);
+
+		init();
+		animate();
+	
+		function init() {
+			//INICIALIZACIÓN DE LA ESCENA
+			scene = new THREE.Scene();
+			aspect = window.innerWidth / window.innerHeight;
+			camera = new THREE.PerspectiveCamera( 45, aspect, 0.1, 1000);
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			//ELEMENTOS DE ESCENA
+			var size = 10;
+			var arrowSize = 5;
+			var divisions = size;
+			var origin = new THREE.Vector3( 0, 0, 0 );
+			var x = new THREE.Vector3( 1, 0, 0 );
+			var y = new THREE.Vector3( 0, 1, 0 );
+		  	var z = new THREE.Vector3( 0, 0, 1 );
+			var color1 = new THREE.Color( 0xFFFFFF );
+		  	var color2 = new THREE.Color( 0x333333 );
+		  	var colorR = new THREE.Color( 0xAA3333 );
+		  	var colorG = new THREE.Color( 0x33AA33 );
+		  	var colorB = new THREE.Color( 0x333366 );
+		  
+		  	//CREAR LAS GRILLAS PARA EL ESCENARIO
+		  	var axesHelper = new THREE.AxesHelper( size );
+		  	var gridHelperXY = new THREE.GridHelper( size, divisions, color1, color1);
+		  	var gridHelperXZ = new THREE.GridHelper( size, divisions, color2, color2 );
+		  	var gridHelperYZ = new THREE.GridHelper( size, divisions, color2, color2 );
+            
+            //ROTARLAS PARA QUE QUEDEN EN EL ESPACIO ADECUADO
+            gridHelperXY.rotateOnWorldAxis ( x, THREE.Math.degToRad(90) );
+            gridHelperXZ.rotateOnWorldAxis ( y, THREE.Math.degToRad(90) );
+            gridHelperYZ.rotateOnWorldAxis ( z, THREE.Math.degToRad(90) );
+            
+            //CREAR LAS FLECHAS QUE INDICAN LOS EJES DE COORDENADAS 3D
+            var arrowX = new THREE.ArrowHelper( x, origin, arrowSize, colorR );
+            var arrowY = new THREE.ArrowHelper( y, origin, arrowSize, colorG );
+            var arrowZ = new THREE.ArrowHelper( z, origin, arrowSize, colorB );
+		
+		  	//AGREGAR A LA ESCENA
+            scene.add( gridHelperXZ );
+		  	scene.add( arrowX );	
+		  	scene.add( arrowY );	
+		  	scene.add( arrowZ );	
+
+			const material = new THREE.LineBasicMaterial({
+				color: 0x0000ff
+			});
+
+			const points = [];
+			points.push( new THREE.Vector3( 0, 0, 0 ) );
+			points.push( new THREE.Vector3( 10, 10, 10 ) );
+
+			const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+			const line = new THREE.Line( geometry, material );
+			scene.add( line );
+
+			sphere = crearEsfera(1);
+			
+			scene.add( sphere );
+
+			//MOVER LA CÁMARA
+			camera.position.x = 5;
+			camera.position.y = 8;	 
+		  	camera.position.z = -5;			
+		  	camera.lookAt( origin );
+			}
+    
+    function animate() {
+        render();
+        requestAnimationFrame( animate );
+    }
+    
+	function render(){
+		var dtime =2*(Date.now()-startTime);
+		camera.position.x = 15*Math.cos(dtime/10000);
+        camera.position.z = 15*Math.sin(dtime/10000);
+
+		if(presionado){
+			presionado = false;
+			switch(etapa){
+				default :
+					scene.remove(sphere);
+					sphere = crearEsfera(1);
+					scene.add(sphere);
+					etapa = 0;
+					break;
+				case 0: 
+					sphere.applyMatrix(scale(new THREE.Vector3(0.5,1,1)));
+					etapa++;
+					break;
+				case 1: 
+					sphere.applyMatrix(scale(new THREE.Vector3(1,0.5,1)));
+					etapa++;
+					break;
+				case 2: 
+					sphere.applyMatrix(scale(new THREE.Vector3(1,1,3)));
+					etapa++;
+					break;
+				case 3:
+					sphere.applyMatrix(translate(new THREE.Vector3(0,0,3)));
+					etapa++;
+					break;
+					
+				case 4: 
+					const ang = (180 * Math.asin(1/Math.sqrt(3)))/Math.PI;
+					sphere.applyMatrix(rotate(ang,"y"));
+					etapa++;
+					break;
+				case 5: 
+					sphere.applyMatrix(rotate(-45,"x"));
+					etapa++;
+					break;
+				
+			}
+		}
+
+        camera.lookAt( 0, 0, 0 );
+        renderer.render( scene, camera );
+	}
+
+	/// CREACION DE CUBOS
+	function crearEsfera(radio){
+		const geometry = new THREE.SphereGeometry( 1, 20, 20 );
+
+		for(var i = 0; i < geometry.faces.length;i++){
+			if(i%2 != 0){
+				geometry.faces[ i ].color = new THREE.Color( 0xAA6666 );
+			}
+		}
+
+		const material = new THREE.MeshBasicMaterial( {color: 0xff00ff} );
+		return new THREE.Mesh( geometry, material );
+		
+	}
+
+	/// DETERMINACION MATRIZ DE TRANSFORMACION
+
+	function scale(s){
+		m = new THREE.Matrix4();
+		m.set(
+			s.x ,   0,   0, 0,
+			0   , s.y,   0, 0,
+			0   ,   0, s.z, 0,
+			0   ,   0,   0, 1
+		);
+		return m;
+	}
+
+	function rotate(angle, eje){
+		var angulo = ( angle * Math.PI)/180;
+		var t = new THREE.Matrix4();
+		switch(eje){
+				case "x" : 
+					t.set( 	1,            0,             0, 0,
+							0, Math.cos(angulo), -Math.sin(angulo), 0, 
+							0, Math.sin(angulo),  Math.cos(angulo), 0,
+							0,            0,             0, 1);
+					break;
+
+				case "y" : 
+					t.set( 	 Math.cos(angulo), 0, Math.sin(angulo), 0,
+							            0, 1,            0, 0, 
+							-Math.sin(angulo), 0, Math.cos(angulo), 0,
+							            0, 0,            0, 1);
+					break;
+					
+				case "z" :
+					t.set( 	Math.cos(angulo), -Math.sin(angulo), 0, 0,
+							Math.sin(angulo),  Math.cos(angulo), 0, 0, 
+						 	           0, 		      0, 1, 0,
+							           0,             0, 0, 1);
+					break;
+			}
+
+		return t;
+	}
+
+	function translate (t){
+		m = new THREE.Matrix4();
+		m.set(
+			1 ,   0,   0, t.x,
+			0   , 1,   0, t.y,
+			0   ,   0, 1, t.z,
+			0   ,   0,   0,         1
+		);
+		return m;
+	}
+
+    </script>
+  </body>
+</html>
